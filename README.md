@@ -1,11 +1,11 @@
 # AI-Legal-Assistant
 Built with NeMo Agent Toolkit
 
-# 1) Chuẩn bị
+# 1) Preparation
 
-**Yêu cầu:**
+**Requirements:**
 
-* Python 3.11 hoặc 3.12
+* Python 3.11 or 3.12
 * Docker + docker-compose
 * [uv](https://docs.astral.sh/uv/getting-started/installation/)
 * [NAT](https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/develop/docs/source/quick-start/installing.md)
@@ -17,28 +17,27 @@ Built with NeMo Agent Toolkit
   export TAVILY_API_KEY=...      
   ```
 
-# 2) Khởi chạy hạ tầng vector DB (Milvus, MinIO, etcd, Attu, ES/Kibana – tuỳ chọn)
+# 2) Start middleware services
   ```bash
   docker compose -f deploy/docker-compose.yaml -f deploy/docker-compose-utils.yaml up -d
   ```
 
-# 3) Tạo collections Milvus
+# 3) Create Milvus collection
   ```bash
   python3.12 -m pip install openai pymilvus tiktoken
-  python3.12 create_milvus_collections_oai.py   
+  python3.12 create_milvus_collections.py   
   ```
 
 # 4) Ingest data with OpenAI Embeddings
   ```bash
+  sudo apt-get update
+  sudo apt-get install -y ffmpeg 
   python3.12 -m pip install "markitdown[all]" 
   python3.12 ingest_to_milvus.py \
   --folder ./data/vbqp \
   --collection vn_regulations \
-  --milvus-uri http://localhost:19530 \
   --openai-embed-model text-embedding-3-large \
-  --chunk-tokens 600 --chunk-overlap 80 \
-  --so-hieu-from content --auto-issued-date
-
+  --chunk-tokens 600 --chunk-overlap 80
   ```
 
 # 5) Run NAT

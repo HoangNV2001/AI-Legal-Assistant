@@ -4,7 +4,7 @@ general:
 embedders:
   openai_embedder:
     _type: openai
-    model_name: text-embedding-3-large   # 1536; nếu dùng ...-large => 3072 và phải tạo lại collection
+    model_name: text-embedding-3-large 
 
 retrievers:
   reg_retriever:
@@ -13,6 +13,14 @@ retrievers:
     collection_name: "vn_regulations"
     embedding_model: openai_embedder
     top_k: 12
+
+    vector_field_name: vector
+    text_field_name: text
+    metadata_fields: [issued_date]
+    search_params:
+      metric_type: COSINE
+      params: { "nprobe": 32 }
+
 
 functions:
   # --- RAG từ Milvus ---
