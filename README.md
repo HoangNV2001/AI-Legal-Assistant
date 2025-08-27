@@ -40,11 +40,20 @@ Built with NeMo Agent Toolkit
   --chunk-tokens 600 --chunk-overlap 80
   ```
 
-# 5) Run NAT
+# 5) Run example using NAT's CLI
   ```bash
-    # chạy hỏi thử
-    uv pip install -e ./
-    nat run --config_file configs/legal_multi_agent.yml \
-            --input "Vượt đèn đỏ bị phạt bao tiền"
-    nat eval --config_file configs/legal_multi_agent.yml
+  uv pip install -e ./
+  nat run --config_file configs/legal_multi_agent.yml \
+          --input "Vượt đèn đỏ bị phạt bao tiền"
   ```
+
+# 6) Launching NAT API Server & UI
+## Start the NeMo Agent Toolkit Server
+  ```bash
+  nat serve --config_file configs/legal_multi_agent.yml --port 8006
+  # Or nohup with log file
+  nohup nat serve --config_file configs/legal_multi_agent.yml --port 8006 > "nat_serve_log_$(date +'%Y%m%d_%H%M%S').log" 2>&1 &
+
+  ```
+## UI
+  [Reference](https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/develop/docs/source/quick-start/launching-ui.md)
