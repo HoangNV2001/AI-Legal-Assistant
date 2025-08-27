@@ -1,0 +1,82 @@
+general:
+  use_uvloop: true
+
+embedders:
+  openai_embedder:
+    _type: openai
+    model_name: text-embedding-3-large   # 1536; nếu dùng ...-large => 3072 và phải tạo lại collection
+
+retrievers:
+  reg_retriever:
+    _type: milvus_retriever
+    uri: http://localhost:19530
+    collection_name: "vn_regulations"
+    embedding_model: openai_embedder
+    top_k: 12
+
+functions:
+  # --- RAG từ Milvus ---
+  reg_tool:
+    _type: nat_retriever
+    retriever: reg_retriever
+    topic: Retrieve Vietnamese regulatory documents (decrees, circulars)
+
+  # --- Web fallback ---
+  web_search_tool:
+    _type: tavily_internet_search
+    max_results: 5
+
+  current_time:
+    _type: current_datetime
+    description: "Return current date-time; DO NOT call this unless explicitly asked."
+
+  # --- Router / Quality-check: dùng sub-agent (react_agent) ---
+  answer_quality_check:
+    _type: react_agent
+    llm_name: openai_llm
+    verbose: false
+    tool_names: [current_time]
+    additional_instructions: |
+      Role: Strict JSON scorer for legal answers.
+      Input format: a single-line JSON string containing fields named query, draft, and signals with milvus_hits and web_hits.
+      Task: evaluate groundedness, completeness, and recency, then select one action among accept, need_web, need_more_rag.
+      Output: return only a compact one-line JSON with keys groundedness, completeness, recency_ok, action, notes.
+      Do not add prose, code fences, or extra keys.
+      Do not call any tool.
+
+  # --- Aggregate/Merge context: cũng dùng sub-agent (react_agent) ---
+  aggregate_context_llm:
+    _type: react_agent
+    llm_name: openai_llm
+    verbose: false
+    tool_names: [current_time]
+    additional_instructions: |
+      Role: Context merger for RAG.
+      Input format: a single-line JSON string with fields named query, milvus_snippets as a list of objects each having a text field, web_snippets similar, and max_tokens as an integer.
+      Task: deduplicate and keep only the most relevant passages for the query; ensure total merged text length respects max_tokens roughly.
+      Output: return only a compact one-line JSON with a key merged that is a list of objects each having a text field.
+      Do not add prose, code fences, or extra keys.
+      Do not call any tool.
+
+llms:
+  openai_llm:
+    _type: openai
+    model_name: "gpt-4.1-mini"
+
+workflow:
+  _type: react_agent
+  llm_name: openai_llm
+  verbose: true
+  parse_agent_response_max_retries: 5
+  tool_names:
+    - reg_tool
+    - web_search_tool
+    - answer_quality_check
+    - aggregate_context_llm
+  additional_instructions: |
+    Phạm vi: chỉ dựa trên Nghị định, Thông tư; không phỏng đoán.
+    Phong cách: ngắn gọn, có cấu trúc; kèm câu cảnh báo Đây không phải tư vấn pháp lý.
+    Cách hành động:
+    1. Gọi reg_tool để lấy ngữ cảnh và soạn một bản nháp ngắn khoảng hai trăm từ.
+    2. Gọi answer_quality_check bằng cách đặt Action Input là một chuỗi JSON một dòng có các trường query, draft, signals gồm milvus_hits và web_hits. Nếu kết quả cho thấy cần web, hãy gọi web_search_tool với truy vấn hẹp theo thẩm quyền và thời điểm hiệu lực. Nếu cần thêm RAG, mở rộng từ khóa và gọi lại reg_tool.
+    3. Khi đã có các đoạn trích từ Milvus và có thể cả web, gọi aggregate_context_llm với Action Input là một chuỗi JSON một dòng có các trường query, milvus_snippets (danh sách đối tượng có trường text), web_snippets tương tự, và max_tokens bằng sáu nghìn. Dùng kết quả merged để viết câu trả lời cuối cùng. Không cần trích dẫn.

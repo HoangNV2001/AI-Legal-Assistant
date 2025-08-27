@@ -1,0 +1,101 @@
+“Multi-Agent AI Legal Assistant” built with **NeMo Agent Toolkit (NAT)**
+
+# 1) Luồng xử lý theo các bước trên hình
+
+1. **Docs → Ingest**: nhận hợp đồng, văn bản quy phạm, án lệ…
+2. **Binary quantization**: nén/chuẩn hoá embedding (PQ/binary) để giảm RAM/SSD.
+3. **Milvus (self-hosted)**: lưu vector + metadata; hỗ trợ truy vấn theo ngữ nghĩa.
+4. **RAG Agent**: lấy query, truy hồi top-k, chấm điểm & chuẩn hoá ngữ cảnh.
+5. **Router / Quality check**: tự-đánh-giá câu trả lời từ RAG (độ đầy đủ, căn cứ, tính cập nhật, độ tự tin).
+6. **Web search nếu chưa đạt**: gọi công cụ tìm kiếm (Firecrawl) để bổ sung bằng chứng.
+7. **Web context**: lấy nội dung HTML/markdown + trích xuất đoạn liên quan.
+8. **Aggregate/Merge context**: hợp nhất ngữ cảnh từ Milvus + web (khử trùng lặp, xếp hạng lại).
+9. **Prepare prompt template**: đóng gói query + aggregated context + hướng dẫn pháp lý/citation.
+10. **Synthesizer Agent**: sinh câu trả lời cuối cùng (giọng điệu luật sư, có trích dẫn).
+11. **Final response**: trả kết quả, kèm cảnh báo “không phải tư vấn pháp lý”.
+
+# 2) Mapping sang NeMo Agent Toolkit
+
+| Sơ đồ                  | Thành phần NAT đề xuất                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| Ingest + Embedding     | **Tool** `DocumentIngestTool` (parser) + **Tool** `EmbeddingTool` (gọi NIM embedding)       |
+| Binary quantization    | Tùy chọn: cấu hình **Milvus index** (PQ/BIN) + post-process trong `EmbeddingTool`           |
+| Milvus vector DB       | **Tool** `VectorStoreTool` (adapter Milvus: upsert/query)                                   |
+| RAG agent              | **Agent** `RAGAgent` dùng `VectorStoreTool` + rerank (nếu có)                               |
+| Router / Quality check | **Agent** `RouterAgent` + **Evaluator** `AnswerQualityEvaluator` (LLM-as-judge + heuristic) |
+| Firecrawl              | **Tool** `WebSearchTool` (wrapper API Firecrawl)                                            |
+| Web context extract    | **Tool** `WebContentTool` (fetch + boilerplate removal + chunking)                          |
+| Aggregate context      | **Tool** `ContextAggregatorTool` (dedup, re-rank, cap token)                                |
+| Prompt prep            | **PromptTemplate** cho synthesizer (kèm cấu trúc citation)                                  |
+| Synthesizer agent      | **Agent** `SynthesizerAgent` (LLM NIM)                                                      |
+| Observability/Eval     | NAT **tracing/telemetry** + bộ **evaluation** kịch bản QA pháp lý                           |
+
+> NAT cho phép “framework-agnostic”: các **Tool** ở trên chỉ là adapter mỏng (HTTP/gRPC) nên bạn vẫn giữ Milvus/Firecrawl hiện có.
+
+# 3) Thiết kế kỹ thuật chi tiết (ngắn gọn)
+
+**Embedding & Index**
+
+* Model: embedding NIM (sentence/ctx length lớn).
+* Chuẩn hoá: L2-norm, tuỳ chọn **PQ** hoặc **binary hashing** trước khi upsert Milvus.
+* Milvus: 2 collection (prod / staging), index IVF\_PQ (hoặc HNSW + scalar quantization), `metric_type` = cosine/ ip nhất quán với embedding.
+
+**Schema metadata (Milvus)**
+
+* `doc_id, chunk_id, text, source_type, source_url, jurisdiction, law_type, effective_date, confidence, context_id` (context\_id để chèn **<<\<context\_id="...">>>**).
+
+**RAGAgent**
+
+* `retrieve(query, k)` → `re_rank(query, chunks)` → `select_top_m`.
+* Bổ sung `legal_filters` (jurisdiction, hiệu lực văn bản, loại tài liệu).
+
+**RouterAgent / AnswerQualityEvaluator**
+
+* Tiêu chí: **Completeness**, **Groundedness**, **Recency**, **Conflicts**.
+* Ngưỡng: nếu thiếu căn cứ/độ mới → kích hoạt `WebSearchTool`.
+
+**WebSearchTool + WebContentTool**
+
+* Firecrawl: site-search + scrape → trả về {url, title, snippet, content}.
+* Chunking web: loại bỏ menu/boilerplate, trích **đoạn trùng khớp** truy vấn (BM25 + sim).
+
+**ContextAggregatorTool**
+
+* Hợp nhất Milvus + Web theo **hybrid score** (α·dense + β·BM25 + γ·authority).
+* Khử trùng lặp bằng MinHash/SimHash; giới hạn tổng tokens (hard cap).
+
+**Prompting & Citation**
+
+* Mẫu trả lời (giọng điệu luật sư, có cảnh báo, bullet rõ ràng).
+* **Inline citation**: tối đa 1–2/ý, dùng `<<<context_id="...">>>`, ưu tiên nguồn pháp quy/án lệ.
+
+**SynthesizerAgent**
+
+* LLM NIM (8B/70B tuỳ hạ tầng), bật JSON-mode khi cần trích xuất cấu trúc.
+* Guardrails: không suy đoán khi thiếu căn cứ; trả lời “không đủ nguồn” + gợi ý văn bản cần đọc.
+
+**Memory & Session**
+
+* Conversation store (Redis): lịch sử, **task trace** NAT (token, latency, tool-calls).
+* Cho phép “follow-up” dùng lại aggregated context nếu còn hợp lệ.
+
+**Observability & Eval**
+
+* Bật NAT tracing/OpenTelemetry.
+* Bộ test “legal QA”: exact-match trích dẫn điều khoản, kiểm tra **hallucination rate**, **coverage**.
+
+# 4) API bề mặt (gợi ý)
+
+* `POST /ingest` (file/url, metadata)
+* `POST /ask` (query, jurisdiction?, date?, strict\_mode?) → trả: answer + citations + used\_tools
+* `GET /trace/:id` (theo dõi pipeline & profiling)
+
+# 5) Lộ trình build (khi chuyển sang code với repo mẫu NAT)
+
+1. Skeleton NAT: định nghĩa **Tools** (Milvus, Embedding, Firecrawl) → **RAGAgent**.
+2. Thêm **RouterAgent** + **Evaluator** → nhánh web-search.
+3. **ContextAggregatorTool** + prompt-template + **SynthesizerAgent** (citation).
+4. **Observability** + **offline eval** bộ câu hỏi pháp lý nội bộ.
+5. Cứng hoá bảo mật (rate limit, PII-scrub), logging tối giản để phù hợp khách hàng CQĐV.
+
+Nếu bạn gửi repo “simple RAG bằng NeMo Agent Toolkit”, mình sẽ **dựng luôn** các Tool/Agent ở trên và ghép thành pipeline đúng với sơ đồ (bao gồm router, web-search fallback, aggregated context, synthesizer).
