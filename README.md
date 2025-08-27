@@ -7,6 +7,8 @@ Built with NeMo Agent Toolkit
 
 * Python 3.11 hoặc 3.12
 * Docker + docker-compose
+* [uv](https://docs.astral.sh/uv/getting-started/installation/)
+* [NAT](https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/develop/docs/source/quick-start/installing.md)
 * API keys:
 
   ```bash
@@ -44,6 +46,6 @@ Built with NeMo Agent Toolkit
     # chạy hỏi thử
     uv pip install -e ./
     nat run --config_file configs/legal_multi_agent.yml \
-            --input "Tóm tắt điều kiện hiệu lực của hợp đồng lao động vô thời hạn theo pháp luật VN"
+            --input "Vượt đèn đỏ bị phạt bao tiền"
     nat eval --config_file configs/legal_multi_agent.yml
   ```
