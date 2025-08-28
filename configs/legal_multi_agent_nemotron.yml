@@ -1,0 +1,107 @@
+# configs/legal_multi_agent.yml
+general:
+  use_uvloop: true
+
+embedders:
+  milvus_embedder:
+    _type: nim
+    base_url: "http://localhost:8001/v1"
+    model_name: "nvidia/llama-3.2-nv-embedqa-1b-v2"
+
+retrievers:
+  reg_retriever:
+    _type: milvus_retriever
+    uri: http://localhost:19530
+    collection_name: "vn_regulations"
+    embedding_model: milvus_embedder
+    top_k: 12
+
+    vector_field_name: vector
+    text_field_name: text
+    metadata_fields: [issued_date]
+    search_params:
+      metric_type: COSINE
+      params: { "nprobe": 32 }
+
+functions:
+  # --- RAG từ Milvus ---
+  reg_tool:
+    _type: nat_retriever
+    retriever: reg_retriever
+    topic: Retrieve Vietnamese regulatory documents (decrees, circulars)
+
+  # --- Web first (Tavily) ---
+  web_search_tool:
+    _type: tavily_internet_search
+    max_results: 8
+
+  current_time:
+    _type: current_datetime
+    description: "Return current date-time; DO NOT call this unless explicitly asked."
+
+  # --- Router / Quality-check: sub-agent (react_agent) ---
+  answer_quality_check:
+    _type: react_agent
+    llm_name: nim_llm
+    verbose: false
+    tool_names: [current_time]
+    additional_instructions: |
+      Role: Strict JSON scorer for legal answers.
+      Input format: a single-line JSON string containing fields named query, draft, and signals with milvus_hits and web_hits.
+      Policy: prefer web evidence over Milvus when both exist; if web_hits equals zero, recommend web search.
+      Task: evaluate groundedness, completeness, and recency, then select one action among accept, need_web, need_more_rag.
+      Output: return only a compact one-line JSON with keys groundedness, completeness, recency_ok, action, notes.
+      Do not add prose, code fences, or extra keys. Do not call any tool.
+
+  # --- Aggregate/Merge context: sub-agent (react_agent) ---
+  aggregate_context_llm:
+    _type: react_agent
+    llm_name: nim_llm
+    verbose: false
+    tool_names: [current_time]
+    additional_instructions: |
+      Role: Context merger for RAG with explicit priority rules.
+      Priority: keep web snippets over Milvus snippets when content conflicts; break ties by recency and specificity.
+      Input format: a single-line JSON string with fields named query, milvus_snippets as a list of objects each having a text field, web_snippets similar, and max_tokens as an integer.
+      Task: deduplicate; keep only the most relevant web passages first, then add Milvus passages only if they add concrete elements such as thresholds, article numbers, effective dates.
+      Output: return only a compact one-line JSON with a key merged that is a list of objects each having a text field.
+      Do not add prose, code fences, or extra keys. Do not call any tool.
+
+llms:
+  nim_llm:
+    _type: nim
+    base_url: "http://localhost:8000/v1"
+    model_name: meta/llama-3.3-70b-instruct
+    temperature: 0
+    max_tokens: 4096
+    top_p: 1
+
+workflow:
+  _type: react_agent
+  llm_name: nim_llm
+  verbose: true
+  parse_agent_response_max_retries: 5
+  tool_names:
+    - web_search_tool
+    - reg_tool
+    - answer_quality_check
+    - aggregate_context_llm
+  additional_instructions: |
+    Chính sách nguồn: LUÔN bắt đầu bằng web_search_tool và ưu tiên thông tin từ web khi hợp nhất.
+    Phạm vi: chỉ dựa trên Nghị định và Thông tư, không phỏng đoán.
+    Phong cách: ngắn gọn, có cấu trúc; luôn kèm câu Đây không phải tư vấn pháp lý.
+
+    Quy trình hành động (bắt buộc tuân thủ theo thứ tự):
+    1. Gọi web_search_tool trước tiên với truy vấn tiếng Việt sát nghĩa người dùng; tập trung vào nguồn pháp lý chính thống tại Việt Nam. Nếu kết quả quá rộng, thu hẹp theo thẩm quyền, số hiệu, hoặc ngày hiệu lực.
+    2. Nếu web chưa đủ cụ thể cho câu trả lời cuối, mới gọi reg_tool để bổ sung căn cứ. Không dùng reg_tool nếu web đã cung cấp đầy đủ mức phạt, điều khoản, mốc hiệu lực cần thiết.
+    3. Soạn một bản nháp ngắn khoảng hai trăm từ dựa trên nguồn web là chính, có thể tham chiếu ngắn gọn tới điều khoản hoặc mức phạt nếu đã xác định.
+    4. Gọi answer_quality_check bằng cách đặt Action Input là một chuỗi JSON một dòng có các trường query, draft, signals gồm milvus_hits và web_hits. Nếu công cụ trả về cần web thì quay lại bước web_search_tool với truy vấn hẹp hơn.
+    5. Khi đã có các đoạn trích từ web và có thể cả Milvus, gọi aggregate_context_llm với Action Input là một chuỗi JSON một dòng có các trường query, milvus_snippets là danh sách đối tượng có trường text, web_snippets tương tự, và max_tokens bằng sáu nghìn. YÊU CẦU: sắp xếp ưu tiên web; chỉ thêm Milvus nếu bổ sung chi tiết thiếu.
+    6. Viết câu trả lời cuối cùng dựa trên kết quả hợp nhất; KHÔNG chèn trích dẫn tự động; kết thúc với câu Đây không phải tư vấn pháp lý.
+
+eval:
+  general:
+    output_dir: sizing_output/eval
+    dataset:
+      _type: json
+      file_path: ./data/eval/Legal_agent.json
