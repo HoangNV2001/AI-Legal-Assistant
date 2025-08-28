@@ -209,3 +209,6 @@ __marimo__/
 # Runtime volumes (Milvus, MinIO, etc.)
 deploy/volumes/
 **/volumes/**
+
+# sizing output folder
+sizing_output/

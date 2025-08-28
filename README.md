@@ -53,7 +53,12 @@ Built with NeMo Agent Toolkit
   nat serve --config_file configs/legal_multi_agent.yml --port 8006
   # Or nohup with log file
   nohup nat serve --config_file configs/legal_multi_agent.yml --port 8006 > "nat_serve_log_$(date +'%Y%m%d_%H%M%S').log" 2>&1 &
-
   ```
 ## UI
   [Reference](https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/develop/docs/source/quick-start/launching-ui.md)
+
+# 7) Evaluation & Sizing
+
+  ```bash
+  nat sizing calc --config_file configs/legal_multi_agent_eval.yml --calc_output_dir sizing_output --concurrencies 1,2,4,8,16 --num_passes 1
+  ```

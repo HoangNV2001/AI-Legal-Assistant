@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "question": "Lái xe máy vượt đèn đỏ bị phạt bao nhiêu tiền?",
+        "answer": "Người điều khiển xe mô tô, xe gắn máy (kể cả xe máy điện), các loại xe tương tự xe mô tô và các loại xe tương tự xe gắn máy có hành vi vượt đèn đỏ, vượt đèn vàng sẽ bị phạt tiền từ 4.000.000 đồng đến 6.000.000 đồng, trong trường hợp gây tan nan giao thông thì mức phạt là từ 10.000.000 đồng đến 14.000.000 đồng."
+    },
+    {
+        "id": 2,
+        "question": "Lái xe đạp có phải đội mũ bảo hiểm không?",
+        "answer": "Không, người đi xe đạp thông thường không bắt buộc phải đội mũ bảo hiểm theo quy định pháp luật, nhưng cần đội mũ bảo hiểm khi điều khiển xe đạp máy hoặc xe đạp điện để đảm bảo an toàn và tránh bị phạt."
+    }
+]

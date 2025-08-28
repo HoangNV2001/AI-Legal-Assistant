@@ -1,0 +1,57 @@
+# configs/legal_multi_agent_eval.yml
+general:
+  use_uvloop: true
+
+embedders:
+  openai_embedder:
+    _type: openai
+    model_name: text-embedding-3-large   # dim = 3072
+
+retrievers:
+  reg_retriever:
+    _type: milvus_retriever
+    uri: http://localhost:19530
+    collection_name: "vn_regulations"
+    embedding_model: openai_embedder
+    top_k: 15
+
+    vector_field_name: vector
+    text_field_name: text
+    metadata_fields: [issued_date]
+    search_params:
+      metric_type: COSINE
+      params: { "nprobe": 32 }
+
+functions:
+  # --- Milvus RAG tool duy nhất ---
+  reg_tool:
+    _type: nat_retriever
+    retriever: reg_retriever
+    topic: Retrieve Vietnamese regulatory documents (decrees, circulars)
+
+llms:
+  openai_llm:
+    _type: openai
+    model_name: "gpt-4.1-nano"
+    temperature: 0.0          # cố định để kết quả đánh giá ổn định
+
+workflow:
+  _type: react_agent
+  llm_name: openai_llm
+  verbose: true
+  parse_agent_response_max_retries: 3
+  tool_names:
+    - reg_tool
+  additional_instructions: |
+    Phạm vi: chỉ sử dụng Nghị định và Thông tư đã index trong Milvus; không gọi web.
+    Quy trình:
+      1. Gọi reg_tool đúng một lần (trừ khi truy vấn mới cần mở rộng).
+      2. Tóm tắt/diễn giải nội dung tìm được, trích rõ điều khoản hoặc mức phạt khi có.
+    Phong cách: ngắn gọn, có cấu trúc; luôn kết thúc bằng câu Đây không phải tư vấn pháp lý.
+
+eval:
+  general:
+    output_dir: sizing_output/eval
+    dataset:
+      _type: json
+      file_path: ./data/eval/Legal_agent.json
