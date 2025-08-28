@@ -3,9 +3,9 @@ general:
   use_uvloop: true
 
 embedders:
-  milvus_embedder:
+  llama-3.2-nv-embedqa-1b-v2:
     _type: nim
-    base_url: "http://localhost:8001/v1"
+    base_url: "http://localhost:8016/v1"
     model_name: "nvidia/llama-3.2-nv-embedqa-1b-v2"
 
 retrievers:
@@ -13,7 +13,7 @@ retrievers:
     _type: milvus_retriever
     uri: http://localhost:19530
     collection_name: "vn_regulations"
-    embedding_model: milvus_embedder
+    embedding_model: llama-3.2-nv-embedqa-1b-v2
     top_k: 12
 
     vector_field_name: vector
@@ -70,8 +70,8 @@ functions:
 llms:
   nim_llm:
     _type: nim
-    base_url: "http://localhost:8000/v1"
-    model_name: meta/llama-3.3-70b-instruct
+    base_url: "http://localhost:8015/v1"
+    model_name: nvidia/llama-3_3-nemotron-super-49b-v1_5
     temperature: 0
     max_tokens: 4096
     top_p: 1

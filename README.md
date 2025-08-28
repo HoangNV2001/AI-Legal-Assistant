@@ -17,10 +17,15 @@ Built with NeMo Agent Toolkit
   export TAVILY_API_KEY=...      
   ```
 
-# 2) Start middleware services
+# 2) Start containers
   ```bash
   docker compose -f deploy/docker-compose.yaml -f deploy/docker-compose-utils.yaml up -d
   ```
+## If self-host models
+[embedding model](https://build.nvidia.com/nvidia/llama-3_2-nv-embedqa-1b-v2/deploy?environment=linux.md)
+**NOTE:** set exposed port to 8016 *(-p 8016:8000 \)*
+[LLM](https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1_5/deploy)
+**NOTE:** set exposed port to 8015 *(-p 8015:8000 \)*
 
 # 3) Create Milvus collection
   ```bash
