@@ -82,6 +82,13 @@ Built with NeMo Agent Toolkit
 
 # 7) Evaluation & Sizing
 
+## 7.1) Sizing
   ```bash
-  nat sizing calc --config_file configs/legal_multi_agent_eval.yml --calc_output_dir sizing_output --concurrencies 1,2,4,8,16 --num_passes 1
+  nat sizing calc --config_file configs/legal_multi_agent_no_websearch.yml --calc_output_dir sizing_output --concurrencies 1,2,4,8,16,32 --num_passes 2
+  ```
+
+## 7.2) Evaluation
+
+  ```bash
+  nat eval --config_file configs/legal_multi_agent.yml
   ```

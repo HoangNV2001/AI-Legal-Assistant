@@ -8,5 +8,56 @@
         "id": 2,
         "question": "Lái xe đạp có phải đội mũ bảo hiểm không?",
         "answer": "Không, người đi xe đạp thông thường không bắt buộc phải đội mũ bảo hiểm theo quy định pháp luật, nhưng cần đội mũ bảo hiểm khi điều khiển xe đạp máy hoặc xe đạp điện để đảm bảo an toàn và tránh bị phạt."
+    },
+    {
+        "id": 3,
+        "question": "Nghị định 168/2024/NĐ‑CP có hiệu lực từ ngày nào?",
+        "answer": "có hiệu lực từ ngày 01/01/2025"
+    },
+    {
+        "id": 4,
+        "question": "Quy định về xử phạt khi uống rượu, bia đạt mức cồn “kịch khung” (trên 80 mg/100 ml máu hoặc 0,4 mg/l khí thở) đối với xe máy là gì?",
+        "answer": "Phạt 8–10 triệu đồng, tước GPLX 22–24 tháng."
+    },
+    {
+        "id": 5,
+        "question": "Không đội mũ bảo hiểm hoặc đội không đúng cách bị phạt bao nhiêu theo Nghị định 168?",
+        "answer": "Phạt 400.000–600.000 đồng."
+    },
+    {
+        "id": 6,
+        "question": "Vượt đèn đỏ không gây tai nạn bị xử phạt ra sao? Còn nếu gây tai nạn thì thế nào?",
+        "answer": "Không gây tai nạn: 4–6 triệu đồng, trừ 4 điểm; gây tai nạn: 10–14 triệu, trừ 10 điểm."
+    },
+    {
+        "id": 7,
+        "question": "Đi đè vạch dừng đèn đỏ thì bị xử phạt như thế nào, tùy gây tai nạn hay không?",
+        "answer": "Không gây tai nạn: 200.000–400.000 đồng; gây tai nạn: 10–14 triệu, trừ 10 điểm."
+    },
+    {
+        "id": 8,
+        "question": "Không bật đèn xe trong điều kiện thời tiết xấu hoặc trời tối thì mức phạt cụ thể ra sao?",
+        "answer": "Không gây tai nạn: 200.000–400.000 đồng; gây tai nạn: 10–14 triệu và trừ 10 điểm."
+    },
+    {
+        "id": 9,
+        "question": "Người điều khiển ô tô đi ngược chiều trên đường một chiều thì bị xử phạt bao nhiêu?",
+        "answer": "Phạt tiền từ 18–20 triệu đồng, đồng thời bị trừ 4 điểm GPLX."
+    },
+    {
+        "id": 10,
+        "question": "Hành vi chở quá số người quy định trên xe ô tô chở khách sẽ bị xử phạt thế nào?",
+        "answer": "Xe cá nhân không kinh doanh: Phạt 400.000–600.000 đồng cho mỗi người vượt, tối đa không quá 75 triệu đồng. Nếu là xe kinh doanh có tuyến trên 300 km: Phạt 1–2 triệu đồng mỗi người vượt, tối đa 75 triệu đồng."
+    },
+    {
+        "id": 11,
+        "question": "Sử dụng điện thoại di động khi đang điều khiển ô tô có bị xử phạt không, mức phạt bao nhiêu?",
+        "answer": "hạt 4–6 triệu đồng và trừ 4 điểm GPLX, nếu không gây tai nạn. Nếu gây tai nạn, mức tăng lên 20–22 triệu đồng và trừ tới 10 điểm."
+    }
+    ,
+    {
+        "id": 12,
+        "question": "Người đi xe máy đi vào đường cao tốc trái quy định thì bị xử lý ra sao?",
+        "answer": "Điều khiển xe vào đường cao tốc (không được phép) sẽ bị phạt 4–6 triệu đồng."
     }
 ]
