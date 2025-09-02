@@ -55,9 +55,9 @@ functions:
     tool_names: [current_time]
     additional_instructions: |
       Role: Context merger for Milvus-only RAG.
-      Input: one-line JSON with fields query, milvus_snippets (list of {text}), max_tokens (int).
+      Input: one-line JSON with fields query, milvus_snippets (list of {{text}}), max_tokens (int).
       Task: deduplicate; prefer passages with concrete thresholds, article numbers, effective dates.
-      Output: return ONLY one-line JSON with key merged (list of {text}).
+      Output: return ONLY one-line JSON with key merged (list of {{text}}).
       Do NOT print Thought/Action/Final Answer. Do NOT call any tool. No prose.
 
 llms:
