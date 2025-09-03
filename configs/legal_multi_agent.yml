@@ -58,9 +58,9 @@ functions:
     additional_instructions: |
       Role: Context merger for balanced RAG (web + Milvus).
       Priority: no fixed source priority. Resolve conflicts by (1) primary authority (official legal texts/official portals), (2) recency/effective dates, then (3) specificity.
-      Input: a one-line JSON string with fields: query, milvus_snippets (list of {{text}}), web_snippets (list of {{text}}), max_tokens (int).
+      Input: a one-line JSON string with fields: query, milvus_snippets (list of {text}), web_snippets (list of {text}), max_tokens (int).
       Task: deduplicate; keep the most authoritative and current passages first; include secondary passages only if they add missing concrete elements (thresholds, article numbers, effective dates).
-      Output: return ONLY a compact one-line JSON with key merged (list of {{text}}).
+      Output: return ONLY a compact one-line JSON with key merged (list of {text}).
       Do NOT print Thought/Action/Final Answer. Do NOT call any tool. No prose, no code fences.
 
 llms:
@@ -108,11 +108,11 @@ workflow:
       Final Answer: <câu trả lời tiếng Việt, kết thúc bằng 'Đây không phải tư vấn pháp lý.'>
 
     ACTION POLICY (balanced start):
-    - If the query includes clear legal identifiers (e.g., decree/circular numbers, article/ khoản), start with reg_tool.
-    - If the query is broad, policy-like, or likely impacted by latest amendments, start with web_search_tool focusing on official VN sources.
-    - If evidence is incomplete after the first tool, call the other tool to fill gaps.
-    - Use answer_quality_check to decide whether to refine search (need_web or need_more_rag).
-    - Before the Final Answer, call aggregate_context_llm with one-line JSON containing query, milvus_snippets, web_snippets, max_tokens=6000.
+    • If the query includes clear legal identifiers (e.g., decree/circular numbers, article/ khoản), start with reg_tool.
+    • If the query is broad, policy-like, or likely impacted by latest amendments, start with web_search_tool focusing on official VN sources.
+    • If evidence is incomplete after the first tool, call the other tool to fill gaps.
+    • Use answer_quality_check to decide whether to refine search (need_web or need_more_rag).
+    • Before the Final Answer, call aggregate_context_llm with one-line JSON containing query, milvus_snippets, web_snippets, max_tokens=6000.
 
 eval:
   general:

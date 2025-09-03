@@ -37,21 +37,11 @@ functions:
     verbose: false
     tool_names: [current_time]
     additional_instructions: |
-      Role: Strict JSON scorer for legal answers.
-      Input: ONE-LINE JSON with fields:
-        - query (string)
-        - draft (string)
-        - signals (object) with keys:
-            - milvus_hits (int)
-            - web_hits (int, optional for no_web)
-      Task: Score groundedness, completeness, recency_ok; choose one action among:
-        - accept, need_web, need_more_rag
-      Output: Return ONLY ONE-LINE JSON with keys:
-        groundedness (0..1), completeness (0..1), recency_ok (true/false), action (string), notes (string).
-      If REQUIRED fields are MISSING, return ONE-LINE JSON:
-        {{"groundedness":0,"completeness":0,"recency_ok":false,"action":"need_more_rag","notes":"missing_fields:[query,draft,signals]"}}
-      Do NOT print Thought/Action/Final Answer. Do NOT call any tool. No prose, no code fences.
-
+      Role: Strict JSON scorer for legal answers (Milvus-only).
+      Input format: a one-line JSON string with fields: query, draft, and signals with milvus_hits.
+      Task: evaluate groundedness, completeness, and recency; choose one action among accept, need_more_rag.
+      Output: return ONLY one-line JSON with keys groundedness, completeness, recency_ok, action, notes.
+      Do NOT print Thought/Action/Final Answer. Do NOT call any tool. No prose.
 
   # --- Aggregate/Merge context: sub-agent (react_agent) ---
   aggregate_context_llm:
@@ -61,9 +51,9 @@ functions:
     tool_names: [current_time]
     additional_instructions: |
       Role: Context merger for Milvus-only RAG.
-      Input: one-line JSON with fields query, milvus_snippets (list of {{text}}), max_tokens (int).
+      Input: one-line JSON with fields query, milvus_snippets (list of {text}), max_tokens (int).
       Task: deduplicate; prefer passages with concrete thresholds, article numbers, effective dates.
-      Output: return ONLY one-line JSON with key merged (list of {{text}}).
+      Output: return ONLY one-line JSON with key merged (list of {text}).
       Do NOT print Thought/Action/Final Answer. Do NOT call any tool. No prose.
 
 llms:
@@ -80,35 +70,35 @@ workflow:
   llm_name: vllm_llm
   verbose: true
   parse_agent_response_max_retries: 5
-  max_tool_calls: 8             # <— chặn vòng lặp dài (gợi ý)
   tool_names:
     - reg_tool
     - answer_quality_check
     - aggregate_context_llm
   additional_instructions: |
     /no_think
-    Source policy: BALANCED (no fixed preference). Decide by authority, recency, specificity.
-    Scope: Decrees & Circulars only. No speculation.
-    Style: Answer in Vietnamese; end with: Đây không phải tư vấn pháp lý.
+    STRICT FORMAT (no text before the first line).
 
-    HARD RULES (ReAct):
-    - The FIRST action MUST be reg_tool (no exceptions).
-    - NEVER call answer_quality_check or aggregate_context_llm before a draft exists.
-    - When CALLING A TOOL, return EXACTLY 3 lines:
-      Thought: LOOKUP
-      Action: <reg_tool | answer_quality_check | aggregate_context_llm>
-      Action Input: <ONE-LINE valid JSON, no code fences, no newlines>
-    - When PRODUCING THE FINAL ANSWER, return EXACTLY 1 line:
-      Final Answer: <Vietnamese answer ending with 'Đây không phải tư vấn pháp lý.'>
+    When YOU NEED TO CALL A TOOL, return EXACTLY 3 lines:
+    Thought: LOOKUP
+    Action: <reg_tool | answer_quality_check | aggregate_context_llm>
+    Action Input: <valid ONE-LINE JSON, NO code fences, NO newlines>
 
-    VALID EXAMPLES:
+    When YOU PRODUCE THE FINAL ANSWER, return EXACTLY 1 line:
+    Final Answer: <respond in Vietnamese, concise and structured; end with 'Đây không phải tư vấn pháp lý.'>
+
+    RULES:
+    - Use only tools listed in tool_names.
+    - If evidence is insufficient: use Thought: LOOKUP → Action: reg_tool.
+    - Do NOT print anything beyond the specified lines (no explanations, no markdown, no code fences).
+    - Every JSON in Action Input MUST be ONE LINE.
+
+    VALID EXAMPLE (call retriever):
     Thought: LOOKUP
     Action: reg_tool
     Action Input: {{"query":"mức phạt vượt đèn đỏ"}}
 
-    Thought: LOOKUP
-    Action: web_search_tool
-    Action Input: {{"query":"Nghị định xử phạt lỗi vượt đèn đỏ cập nhật 2024 site:chinhphu.vn"}}
+    VALID EXAMPLE (finalize):
+    Final Answer: … Đây không phải tư vấn pháp lý.
 
 eval:
   general:
