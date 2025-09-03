@@ -35,10 +35,6 @@ functions:
     _type: tavily_internet_search
     max_results: 8
 
-  current_time:
-    _type: current_datetime
-    description: "Return current date-time; DO NOT call this unless explicitly asked."
-
   # --- Router / Quality-check: sub-agent (react_agent) ---
   answer_quality_check:
     _type: react_agent
