@@ -30,10 +30,6 @@ functions:
     retriever: reg_retriever
     topic: Retrieve Vietnamese regulatory documents (decrees, circulars)
 
-  current_time:
-    _type: current_datetime
-    description: "Return current date-time; DO NOT call this unless explicitly asked."
-
   # --- Quality-check: sub-agent (react_agent) ---
   answer_quality_check:
     _type: react_agent
